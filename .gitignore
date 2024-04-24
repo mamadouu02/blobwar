@@ -30,6 +30,8 @@
 *.exe
 *.out
 *.app
+blobwar
+launchStrategy
 
 # macOS files
 .DS_Store

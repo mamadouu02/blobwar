@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <signal.h>
 
 #include "shmem.h"
 
