@@ -1,5 +1,8 @@
 #include "strategy.h"
 
+#define MAX_DEPTH 4
+#define MAX_DEPTH_ALPHA_BETA 7
+
 const std::vector<pair<int, int>> neighbors = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}};
 
 void Strategy::applyMove (bidiarray<Sint16>& blobs, const movement& mv, Uint16 player) {
@@ -66,51 +69,6 @@ vector<movement>& Strategy::computeValidMoves (const bidiarray<Sint16>& blobs, v
     return valid_moves;
 }
 
-/* Min-max algorithm */
-
-Sint32 MinMaxStrategy::minmax(const bidiarray<Sint16>& blobs, Uint8 depth, bool max) {
-    Sint32 best_score;
-    
-    if (depth == 0) {
-        return estimateCurrentScore(blobs);
-    }
-
-    if (max) {
-        best_score = INT8_MIN;
-        vector<movement> valid_moves;
-        computeValidMoves(blobs, valid_moves, _current_player);
-
-        for (movement& mv : valid_moves) {
-            bidiarray<Sint16> new_blobs(blobs);
-            applyMove(new_blobs, mv, _current_player);
-            Sint32 score = minmax(new_blobs, depth - 1, !max);
-
-            if (score > best_score) {
-                best_score = score;
-                if (depth == MAX_DEPTH) {
-                    _saveBestMove(mv);
-                }
-            }
-        }
-    } else {
-        best_score = INT8_MAX;
-        vector<movement> valid_moves;
-        computeValidMoves(blobs, valid_moves, 1 - _current_player);
-
-        for (movement& mv : valid_moves) {
-            bidiarray<Sint16> new_blobs(blobs);
-            applyMove(new_blobs, mv, 1 - _current_player);
-            best_score = std::min(best_score, minmax(new_blobs, depth - 1, !max));
-        }
-    }
-
-    return best_score;
-}
-
-void MinMaxStrategy::computeBestMove () {
-    minmax(_blobs, MAX_DEPTH, true);
-}
-
 /* Greedy algorithm */
 
 Uint32 GreedyStrategy::countEnnemies(const movement& mv) {
@@ -160,4 +118,110 @@ void GreedyStrategy::computeBestMove () {
     }
     
     _saveBestMove(best_move);
+}
+
+/* Min-max algorithm */
+
+Sint32 MinMaxStrategy::minmax(const bidiarray<Sint16>& blobs, Uint8 depth, bool max) {
+    Sint32 best_score;
+    
+    if (depth == 0) {
+        return estimateCurrentScore(blobs);
+    }
+
+    if (max) {
+        best_score = INT8_MIN;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, _current_player);
+            Sint32 score = minmax(new_blobs, depth - 1, !max);
+
+            if (score > best_score) {
+                best_score = score;
+                if (depth == MAX_DEPTH) {
+                    _saveBestMove(mv);
+                }
+            }
+        }
+    } else {
+        best_score = INT8_MAX;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, 1 - _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, 1 - _current_player);
+            best_score = std::min(best_score, minmax(new_blobs, depth - 1, !max));
+        }
+    }
+
+    return best_score;
+}
+
+void MinMaxStrategy::computeBestMove () {
+    minmax(_blobs, MAX_DEPTH, true);
+}
+
+/* Alpha-beta algorithm */
+
+Sint32 AlphaBetaStrategy::alphabeta(const bidiarray<Sint16>& blobs, Uint8 depth, Sint32 alpha, Sint32 beta, bool max) {    
+    if (depth == 0) {
+        return estimateCurrentScore(blobs);
+    }
+
+    if (max) {
+        Sint32 m = INT8_MIN;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, _current_player);
+            Sint32 score = alphabeta(new_blobs, depth - 1, alpha, beta, !max);
+
+            if (score > m) {
+                if (depth == MAX_DEPTH_ALPHA_BETA) {
+                    _saveBestMove(mv);
+                }
+                m = score;
+            }
+
+            if (m >= beta) {
+                return m;
+            }
+
+            alpha = std::max(alpha, m);
+        }
+
+        return m;
+    } else {
+        Sint32 M = INT8_MAX;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, 1 - _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, 1 - _current_player);
+            Sint32 score = alphabeta(new_blobs, depth - 1, alpha, beta, !max);
+
+            if (score < M) {
+                M = score;
+            }
+
+            if (M <= alpha) {
+                return M;
+            }
+
+            beta = std::min(beta, M);
+        }
+
+        return M;
+    }
+}
+
+void AlphaBetaStrategy::computeBestMove () {
+    alphabeta(_blobs, MAX_DEPTH_ALPHA_BETA, INT8_MIN, INT8_MAX, true);
 }

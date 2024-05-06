@@ -1,8 +1,6 @@
 #ifndef __STRATEGY_H
 #define __STRATEGY_H
 
-#define MAX_DEPTH 4
-
 #include "common.h"
 #include "bidiarray.h"
 #include "move.h"
@@ -116,6 +114,31 @@ public:
          * Compute the best score.
          */
     Sint32 minmax (const bidiarray<Sint16>& blobs, Uint8 depth, bool max);
+
+};
+
+class AlphaBetaStrategy : public Strategy {
+
+public:
+        // Constructor from a current situation
+    AlphaBetaStrategy (bidiarray<Sint16>& blobs, 
+              const bidiarray<bool>& holes,
+              const Uint16 current_player,
+              void (*saveBestMove)(movement&))
+            : Strategy(blobs, holes, current_player, saveBestMove)
+        {
+        }
+
+
+        /**
+         * Find the best move.
+         */
+    void computeBestMove ();
+
+        /**
+         * Compute the best score.
+         */
+    Sint32 alphabeta (const bidiarray<Sint16>& blobs, Uint8 depth, Sint32 alpha, Sint32 beta, bool max);
 
 };
 
