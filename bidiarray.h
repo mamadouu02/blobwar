@@ -11,6 +11,15 @@ template<class element_type> class bidiarray {
 	public:
 		bidiarray() {}
 		~bidiarray() {}
+
+		bidiarray(const bidiarray& other) {
+			for (unsigned int i = 0; i < 8; ++i) {
+				for (unsigned int j = 0; j < 8; ++j) {
+					array[i][j] = other.array[i][j];
+				}
+			}
+		}
+		
 		void set(unsigned int x, unsigned int y, element_type value) {
 			array[x][y] = value;
 		}

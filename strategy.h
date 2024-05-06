@@ -1,6 +1,8 @@
 #ifndef __STRATEGY_H
 #define __STRATEGY_H
 
+#define MAX_DEPTH 4
+
 #include "common.h"
 #include "bidiarray.h"
 #include "move.h"
@@ -9,7 +11,7 @@
 
 class Strategy {
 
-private:
+protected:
     //! array containing all blobs on the board
     bidiarray<Sint16> _blobs;
     //! an array of booleans indicating for each cell whether it is a hole or not.
@@ -46,17 +48,38 @@ public:
          * Apply a move to the current state of blobs
          * Assumes that the move is valid
          */
-    void applyMove (const movement& mv);
+    void applyMove (bidiarray<Sint16>& blobs, const movement& mv, Uint16 player);
 
         /**
          * Compute the vector containing every possible moves
          */
-    vector<movement>& computeValidMoves (vector<movement>& valid_moves) const;
+    vector<movement>& computeValidMoves (const bidiarray<Sint16>& blobs, vector<movement>& valid_moves, Uint16 player) const;
 
         /**
          * Estimate the score of the current state of the game
          */
-    Sint32 estimateCurrentScore () const;
+    Sint32 estimateCurrentScore (const bidiarray<Sint16>& blobs) const;
+
+        /**
+         * Find the best move.
+         */
+    void computeBestMove ();
+
+
+};
+
+class GreedyStrategy : public Strategy {
+
+public:
+        // Constructor from a current situation
+    GreedyStrategy (bidiarray<Sint16>& blobs, 
+              const bidiarray<bool>& holes,
+              const Uint16 current_player,
+              void (*saveBestMove)(movement&))
+            : Strategy(blobs, holes, current_player, saveBestMove)
+        {
+        }
+
 
         /**
          * Find the best move.
@@ -67,11 +90,32 @@ public:
          * Count ennemies.
          */
     Uint32 countEnnemies (const movement& mv);
-    
+
+
+};
+
+class MinMaxStrategy : public Strategy {
+
+public:
+        // Constructor from a current situation
+    MinMaxStrategy (bidiarray<Sint16>& blobs, 
+              const bidiarray<bool>& holes,
+              const Uint16 current_player,
+              void (*saveBestMove)(movement&))
+            : Strategy(blobs, holes, current_player, saveBestMove)
+        {
+        }
+
+
         /**
-         * Greedy algorithm.
+         * Find the best move.
          */
-    movement greedy(vector<movement>& valid_moves);
+    void computeBestMove ();
+
+        /**
+         * Compute the best score.
+         */
+    Sint32 minmax (const bidiarray<Sint16>& blobs, Uint8 depth, bool max);
 
 };
 

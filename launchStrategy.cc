@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	shmem_init();
 	func = saveBestMoveToShmem;
 	
-	Strategy strategy(blobs, holes, cplayer, func);
+	MinMaxStrategy strategy(blobs, holes, cplayer, func);
 	strategy.computeBestMove();
 	
 	return 0;

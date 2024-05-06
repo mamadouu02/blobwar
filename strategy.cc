@@ -2,22 +2,39 @@
 
 const std::vector<pair<int, int>> neighbors = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}};
 
-void Strategy::applyMove (const movement& mv) {
-    _blobs.set(mv.nx, mv.ny, _current_player);
+void Strategy::applyMove (bidiarray<Sint16>& blobs, const movement& mv, Uint16 player) {
+    blobs.set(mv.nx, mv.ny, player);
 
-    if ((abs(mv.ox - mv.nx) <= 1) && (abs(mv.oy - mv.ny) <= 1)) {
-        _blobs.set(mv.ox, mv.oy, -1);
+    if ((abs(mv.ox - mv.nx) > 1) || (abs(mv.oy - mv.ny) > 1)) {
+        blobs.set(mv.ox, mv.oy, -1);
+    }
+
+    for (const pair<int, int>& neighbor : neighbors) {
+        int x = mv.nx + neighbor.first;
+        int y = mv.ny + neighbor.second;
+
+        if (x < 0 || x > 7 || y < 0 || y > 7) {
+            continue;
+        }
+
+        if (_holes.get(x, y)) {
+            continue;
+        }
+
+        if (blobs.get(x, y) == (int) 1 - player) {
+            blobs.set(x, y, player);
+        }
     }
 }
 
-Sint32 Strategy::estimateCurrentScore () const {
+Sint32 Strategy::estimateCurrentScore (const bidiarray<Sint16>& blobs) const {
     Sint32 score = 0;
 
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            if (_blobs.get(i, j) == (int) _current_player) {
+            if (blobs.get(i, j) == (int) _current_player) {
                 score++;
-            } else if (_blobs.get(i, j) == (int) 1 - _current_player) {
+            } else if (blobs.get(i, j) == (int) (1 - _current_player)) {
                 score--;
             }
         }
@@ -26,18 +43,18 @@ Sint32 Strategy::estimateCurrentScore () const {
     return score;
 }
 
-vector<movement>& Strategy::computeValidMoves (vector<movement>& valid_moves) const {
+vector<movement>& Strategy::computeValidMoves (const bidiarray<Sint16>& blobs, vector<movement>& valid_moves, Uint16 player) const {
     // The following code finds a valid move.
     movement mv(0, 0, 0, 0);
     // iterate on starting position
     for(mv.ox = 0 ; mv.ox < 8 ; mv.ox++) {
         for(mv.oy = 0 ; mv.oy < 8 ; mv.oy++) {
-            if (_blobs.get(mv.ox, mv.oy) == (int) _current_player) {
+            if (blobs.get(mv.ox, mv.oy) == (int) player) {
                 // iterate on possible destinations
                 for(mv.nx = std::max(0, mv.ox-2) ; mv.nx <= std::min(7, mv.ox+2) ; mv.nx++) {
                     for(mv.ny = std::max(0, mv.oy-2) ; mv.ny <= std::min(7, mv.oy+2) ; mv.ny++) {
                         if (_holes.get(mv.nx, mv.ny)) continue;
-                        if (_blobs.get(mv.nx, mv.ny) == -1) {
+                        if (blobs.get(mv.nx, mv.ny) == -1) {
                             valid_moves.push_back(mv);
                         }
                     }
@@ -49,21 +66,54 @@ vector<movement>& Strategy::computeValidMoves (vector<movement>& valid_moves) co
     return valid_moves;
 }
 
-void Strategy::computeBestMove () {
-    vector<movement> valid_moves;
-    computeValidMoves(valid_moves);
+/* Min-max algorithm */
 
-    if (valid_moves.empty()) {
-        return;
+Sint32 MinMaxStrategy::minmax(const bidiarray<Sint16>& blobs, Uint8 depth, bool max) {
+    Sint32 best_score;
+    
+    if (depth == 0) {
+        return estimateCurrentScore(blobs);
     }
-    
-    movement best_move = greedy(valid_moves);
-    
-    _saveBestMove(best_move);
-    return;
+
+    if (max) {
+        best_score = INT8_MIN;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, _current_player);
+            Sint32 score = minmax(new_blobs, depth - 1, !max);
+
+            if (score > best_score) {
+                best_score = score;
+                if (depth == MAX_DEPTH) {
+                    _saveBestMove(mv);
+                }
+            }
+        }
+    } else {
+        best_score = INT8_MAX;
+        vector<movement> valid_moves;
+        computeValidMoves(blobs, valid_moves, 1 - _current_player);
+
+        for (movement& mv : valid_moves) {
+            bidiarray<Sint16> new_blobs(blobs);
+            applyMove(new_blobs, mv, 1 - _current_player);
+            best_score = std::min(best_score, minmax(new_blobs, depth - 1, !max));
+        }
+    }
+
+    return best_score;
 }
 
-Uint32 Strategy::countEnnemies(const movement& mv) {
+void MinMaxStrategy::computeBestMove () {
+    minmax(_blobs, MAX_DEPTH, true);
+}
+
+/* Greedy algorithm */
+
+Uint32 GreedyStrategy::countEnnemies(const movement& mv) {
     Uint32 score = 0;
 
     for (const pair<int, int>& neighbor : neighbors) {
@@ -86,9 +136,16 @@ Uint32 Strategy::countEnnemies(const movement& mv) {
     return score;
 }
 
-movement Strategy::greedy(vector<movement>& valid_moves) {
+void GreedyStrategy::computeBestMove () {
+    vector<movement> valid_moves;
+    computeValidMoves(_blobs, valid_moves, _current_player);
+
+    if (valid_moves.empty()) {
+        return;
+    }
+    
     Uint32 best_score = 0;
-    movement best_move = valid_moves[0];
+    movement best_move = valid_moves.front();
     
     Uint32 score = 0;
 
@@ -101,6 +158,6 @@ movement Strategy::greedy(vector<movement>& valid_moves) {
             best_move = mv;
         }
     }
-
-    return best_move;
+    
+    _saveBestMove(best_move);
 }
