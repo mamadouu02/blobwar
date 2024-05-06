@@ -1,7 +1,7 @@
 #include "strategy.h"
 
 #define MAX_DEPTH 4
-#define MAX_DEPTH_ALPHA_BETA 7
+#define MAX_DEPTH_ALPHA_BETA 5
 
 const std::vector<pair<int, int>> neighbors = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}};
 
@@ -134,6 +134,10 @@ Sint32 MinMaxStrategy::minmax(const bidiarray<Sint16>& blobs, Uint8 depth, bool 
         vector<movement> valid_moves;
         computeValidMoves(blobs, valid_moves, _current_player);
 
+        if (valid_moves.empty()) {
+            return estimateCurrentScore(blobs);
+        }
+
         for (movement& mv : valid_moves) {
             bidiarray<Sint16> new_blobs(blobs);
             applyMove(new_blobs, mv, _current_player);
@@ -150,6 +154,10 @@ Sint32 MinMaxStrategy::minmax(const bidiarray<Sint16>& blobs, Uint8 depth, bool 
         best_score = INT8_MAX;
         vector<movement> valid_moves;
         computeValidMoves(blobs, valid_moves, 1 - _current_player);
+
+        if (valid_moves.empty()) {
+            return estimateCurrentScore(blobs);
+        }
 
         for (movement& mv : valid_moves) {
             bidiarray<Sint16> new_blobs(blobs);
@@ -177,6 +185,10 @@ Sint32 AlphaBetaStrategy::alphabeta(const bidiarray<Sint16>& blobs, Uint8 depth,
         vector<movement> valid_moves;
         computeValidMoves(blobs, valid_moves, _current_player);
 
+        if (valid_moves.empty()) {
+            return estimateCurrentScore(blobs);
+        }
+
         for (movement& mv : valid_moves) {
             bidiarray<Sint16> new_blobs(blobs);
             applyMove(new_blobs, mv, _current_player);
@@ -201,6 +213,10 @@ Sint32 AlphaBetaStrategy::alphabeta(const bidiarray<Sint16>& blobs, Uint8 depth,
         Sint32 M = INT8_MAX;
         vector<movement> valid_moves;
         computeValidMoves(blobs, valid_moves, 1 - _current_player);
+
+        if (valid_moves.empty()) {
+            return estimateCurrentScore(blobs);
+        }
 
         for (movement& mv : valid_moves) {
             bidiarray<Sint16> new_blobs(blobs);
