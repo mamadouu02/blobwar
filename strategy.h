@@ -63,7 +63,16 @@ public:
          */
     void computeBestMove ();
     
+        /**
+         * Count ennemies.
+         */
+    Uint32 countEnnemies (const movement& mv);
     
+        /**
+         * Greedy algorithm.
+         */
+    movement greedy(vector<movement>& valid_moves);
+
 };
 
 #endif
