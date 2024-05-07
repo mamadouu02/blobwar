@@ -52,6 +52,8 @@ int main(int argc, char **argv) {
 	shmem_init();
 	func = saveBestMoveToShmem;
 	
+	// GreedyStrategy strategy(blobs, holes, cplayer, func);
+	// MinMaxStrategy strategy(blobs, holes, cplayer, func);
 	AlphaBetaStrategy strategy(blobs, holes, cplayer, func);
 	strategy.computeBestMove();
 	
