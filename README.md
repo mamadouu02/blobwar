@@ -16,7 +16,7 @@ L'IA utilise différentes stratégies :
 - un algorithme min-max
 - un algorithme alpha-beta
 
-Pour changer de stratégie, il faut modifier dans la classe de stategy dans le fichier `launchStrategy.cc`
+Pour changer de stratégie, il faut modifier dans la classe de `strategy` dans le fichier `launchStrategy.cc`
 
 ```c++
 // GreedyStrategy strategy(blobs, holes, cplayer, func);
